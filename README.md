@@ -1,127 +1,124 @@
-# Talents Cachés
+# Hidden Talents
 
-Plateforme interne où les cast members déclarent les compétences qu'ils ont en dehors de leur contrat (diplômes, portfolio, expérience), et où les managers, la direction et les RH peuvent les trouver pour des missions.
+Internal platform where cast members declare the skills they have outside their job (degrees, portfolio, experience), and where the admin RH can find them for missions.
 
-**Stack** : React (Vite) · Node.js (Express) · MongoDB (Mongoose, preuves stockées dans GridFS). Tout est en JavaScript.
+**Stack**: React (Vite) · Node.js (Express) · MongoDB (Mongoose, proofs stored in GridFS). Everything is JavaScript.
 
-**Organisation** : `Frontend/` et `Backend/` sont deux applications indépendantes (chacune son `package.json`), pensées pour être déployées séparément — par exemple le Frontend sur Vercel/Netlify et le Backend sur Render/Railway/Fly.io.
+**Organization**: `Frontend/` and `Backend/` are two independent applications (each with its own `package.json`), meant to be deployed separately — for example the Frontend on Vercel/Netlify and the Backend on Render/Railway/Fly.io.
 
-## Rôles
+## Roles
 
-| Rôle | Peut faire |
+| Role | Can do |
 | --- | --- |
-| Cast member | Créer son profil, ajouter compétences et preuves, se rendre visible ou non, accepter ou refuser une mission, supprimer son compte |
-| Manager | Tout ce qui précède, plus chercher des talents et proposer des missions |
-| Direction | Tout ce que fait le manager, plus la vue d'ensemble (statistiques) |
-| RH | Tout, plus vérifier les preuves, ouvrir les fichiers et attribuer les rôles |
+| Cast member | Create their profile, add skills and proofs, make themselves visible or not, accept or decline a mission, delete their account |
+| Admin RH | Everything above, plus search for talents, propose missions, see the overview (stats), review proofs, open files and grant roles |
 
-Règles appliquées par l'API (testées dans `Backend/test/api.test.js`) :
+Rules enforced by the API (tested in `Backend/test/api.test.js`):
 
-- Un profil est **masqué par défaut**. Seul le salarié peut le rendre visible.
-- Managers et direction ne voient **ni l'e-mail ni les fichiers de preuve**, seulement le statut (« Justifiée », « En vérification », « Déclarative »).
-- Un refus de preuve par les RH n'est montré qu'au salarié et aux RH.
-- Seul le destinataire d'une mission peut y répondre.
-- Supprimer son compte efface le profil, les fichiers et les missions liées.
+- A profile is **hidden by default**. Only the employee can make it visible.
+- A proof rejection by the admin RH is only shown to the employee and the admin RH.
+- Only the recipient of a mission can answer it.
+- Deleting an account erases the profile, files, and related missions.
 
-## 1. Créer la base MongoDB (gratuit)
+## 1. Create the MongoDB database (free)
 
-1. Créez un compte sur [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) puis un cluster **M0 (gratuit)**, région **Europe** (Paris ou Francfort).
-2. *Database Access* : créez un utilisateur avec un mot de passe.
-3. *Network Access* : ajoutez `0.0.0.0/0` (le Backend n'a pas forcément d'adresse IP fixe selon l'hébergeur).
-4. *Connect › Drivers* : copiez la chaîne de connexion et ajoutez le nom de la base avant le `?` :
-   `mongodb+srv://utilisateur:motdepasse@cluster0.xxxxx.mongodb.net/talents-caches?retryWrites=true&w=majority`
+1. Create an account on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas), then an **M0 (free)** cluster, in a region close to you.
+2. *Database Access*: create a user with a password.
+3. *Network Access*: add `0.0.0.0/0` (the Backend may not have a fixed IP address depending on the host).
+4. *Connect › Drivers*: copy the connection string and add the database name before the `?`:
+   `mongodb+srv://user:password@cluster0.xxxxx.mongodb.net/hidden-talents?retryWrites=true&w=majority`
 
-## 2. Lancer en local
+## 2. Run locally
 
-Prérequis : Node.js 20 ou plus. Deux terminaux, un par app.
+Prerequisite: Node.js 20 or later. Two terminals, one per app.
 
 ```bash
-# Terminal 1 — Backend (API sur :3000)
+# Terminal 1 — Backend (API on :3000)
 cd Backend
 npm install
-cp .env.example .env      # remplissez MONGODB_URI, JWT_SECRET et RH_EMAILS (PORT=3000 par défaut)
+cp .env.example .env      # fill in MONGODB_URI, JWT_SECRET and RH_EMAILS (PORT=3000 by default)
 npm run dev
 ```
 
 ```bash
-# Terminal 2 — Frontend (site sur http://localhost:5173)
+# Terminal 2 — Frontend (site on http://localhost:5173)
 cd Frontend
 npm install
-cp .env.example .env      # VITE_API_URL=http://localhost:3000 par défaut, pas besoin d'y toucher en local
+cp .env.example .env      # VITE_API_URL=http://localhost:3000 by default, no need to change it locally
 npm run dev
 ```
 
-Inscrivez-vous avec une adresse listée dans `RH_EMAILS` : ce compte reçoit le rôle RH. Depuis l'**Espace RH**, attribuez ensuite les rôles manager et direction.
+Sign up with an address listed in `RH_EMAILS`: that account gets the admin RH role.
 
-## 3. Déployer
+## 3. Deploy
 
-Les deux apps se déploient **indépendamment**, chacune avec son propre `package.json` :
+Both apps deploy **independently**, each with its own `package.json`:
 
-**Backend** (ex. Render, Railway, Fly.io) :
-- Build : `npm install` · Démarrage : `npm start`
-- Variables d'environnement : `MONGODB_URI`, `JWT_SECRET`, `RH_EMAILS`, `ALLOWED_EMAIL_DOMAIN` (facultatif), `FRONTEND_URL` (l'URL exacte du Frontend déployé, pour CORS + cookie), `NODE_ENV=production`.
+**Backend** (e.g. Render, Railway, Fly.io):
+- Build: `npm install` · Start: `npm start`
+- Environment variables: `MONGODB_URI`, `JWT_SECRET`, `RH_EMAILS`, `ALLOWED_EMAIL_DOMAIN` (optional), `FRONTEND_URL` (the exact URL of the deployed Frontend, for CORS + cookie), `NODE_ENV=production`.
 
-**Frontend** (ex. Vercel, Netlify) :
-- Dossier racine du projet : `Frontend`
-- Build : `npm install && npm run build` · Dossier de sortie : `dist`
-- Variable d'environnement : `VITE_API_URL` = l'URL du Backend déployé.
+**Frontend** (e.g. Vercel, Netlify):
+- Project root directory: `Frontend`
+- Build: `npm install && npm run build` · Output directory: `dist`
+- Environment variable: `VITE_API_URL` = the deployed Backend's URL.
 
-⚠️ Déployez le Backend d'abord pour connaître son URL, à renseigner dans `VITE_API_URL` côté Frontend et dans `FRONTEND_URL` côté Backend.
+⚠️ Deploy the Backend first to know its URL, to set in `VITE_API_URL` on the Frontend and in `FRONTEND_URL` on the Backend.
 
-## Variables d'environnement
+## Environment variables
 
-| Variable | Où | Rôle |
+| Variable | Where | Role |
 | --- | --- | --- |
-| `MONGODB_URI` | Backend | Chaîne de connexion MongoDB |
-| `JWT_SECRET` | Backend | Secret de signature des sessions, 32 caractères minimum |
-| `RH_EMAILS` | Backend | Adresses qui deviennent RH à l'inscription, séparées par des virgules |
-| `ALLOWED_EMAIL_DOMAIN` | Backend | Facultatif : n'accepte que les adresses de ce domaine (ex. `entreprise.com`) |
-| `FRONTEND_URL` | Backend | URL du Frontend déployé, pour autoriser CORS + cookie cross-origin |
-| `NODE_ENV` | Backend | `production` une fois déployé (active Secure + SameSite=None sur le cookie) |
-| `VITE_API_URL` | Frontend | URL du Backend déployé |
+| `MONGODB_URI` | Backend | MongoDB connection string |
+| `JWT_SECRET` | Backend | Secret used to sign sessions, 32 characters minimum |
+| `RH_EMAILS` | Backend | Addresses that become admin RH at registration, comma-separated |
+| `ALLOWED_EMAIL_DOMAIN` | Backend | Optional: only accept addresses on this domain (e.g. `company.com`) |
+| `FRONTEND_URL` | Backend | URL of the deployed Frontend, to allow CORS + cross-origin cookie |
+| `NODE_ENV` | Backend | `production` once deployed (enables Secure + SameSite=None on the cookie) |
+| `VITE_API_URL` | Frontend | URL of the deployed Backend |
 
 ## Tests
 
-Le test simule tout le parcours : inscription, preuves, visibilité, recherche, missions, vérification RH, suppression.
+The test simulates the whole journey: registration, proofs, visibility, search, missions, HR review, deletion.
 
 ```bash
 cd Backend
 MONGODB_URI=mongodb://127.0.0.1:27017/talents-test npm test
 ```
 
-⚠️ La base indiquée est **vidée** au début du test : n'utilisez jamais la base de production.
+⚠️ The given database is **wiped** at the start of the test: never use the production database.
 
 ## Structure
 
 ```
 Backend/
-  server/app.js         routes Express + CORS
-  server/origin.js       liste des origines autorisées (local + FRONTEND_URL)
-  server/models.js       modèles Mongoose (User avec ses compétences, Mission)
-  server/auth.js         sessions (cookie httpOnly + JWT) et contrôle des rôles
-  server/serialize.js    ce que chaque rôle a le droit de voir
-  server/constants.js    domaines, niveaux, disponibilités, limites
-  server/dev.js          serveur local
-  test/api.test.js       test de bout en bout
-  package.json           dépendances et scripts du Backend
+  server/app.js         Express routes + CORS
+  server/origin.js      list of allowed origins (local + FRONTEND_URL)
+  server/models.js      Mongoose models (User with their skills, Mission)
+  server/auth.js        sessions (httpOnly cookie + JWT) and role checks
+  server/serialize.js   what each role is allowed to see
+  server/constants.js   domains, levels, availability, limits
+  server/dev.js         local server
+  test/api.test.js      end-to-end test
+  package.json          Backend dependencies and scripts
 
 Frontend/
   index.html
   src/
     main.jsx, App.jsx
-    api.js                appels à l'API (VITE_API_URL)
+    api.js               API calls (VITE_API_URL)
     components.jsx, pages/
-  package.json            dépendances et scripts du Frontend
+  package.json           Frontend dependencies and scripts
 ```
 
-## Limites connues et prochaines étapes
+## Known limitations and next steps
 
-- **Fichiers de preuve : 4 Mo maximum** par requête.
-- **Pas de « mot de passe oublié »** : il faut un service d'envoi d'e-mails (Resend, Brevo…). En attendant, les RH peuvent supprimer un compte pour qu'il soit recréé.
-- **Pas de limite de tentatives de connexion** : à ajouter avant une ouverture large (par exemple avec Upstash Rate Limit).
-- **Pas de notification par e-mail** pour les nouvelles missions : elles apparaissent dans l'onglet Missions.
-- La recherche est pensée pour quelques milliers de profils. Au-delà, il faudra un index texte MongoDB.
+- **Proof files: 4 MB maximum** per request.
+- **No "forgot password"**: would need an email-sending service (Resend, Brevo…). In the meantime, the admin RH can delete an account so it can be recreated.
+- **No login attempt rate limiting**: should be added before a wider rollout (e.g. with Upstash Rate Limit).
+- **No email notification** for new missions: they show up in the Missions tab.
+- Search is designed for a few thousand profiles. Beyond that, a MongoDB text index will be needed.
 
-## Avant d'y mettre de vraies données
+## Before putting in real data
 
-Cette application traite des données personnelles de salariés. Avant de l'ouvrir à des collègues, faites valider le projet par les RH, le DPO (RGPD) et la DSI, et informez le CSE. L'hébergement prévu par l'entreprise peut aussi être imposé. D'ici là, testez avec des comptes fictifs.
+This application handles employees' personal data. Before opening it up to colleagues, get the project approved by HR, the DPO (GDPR) and IT, and inform the works council. The company's designated hosting may also be required. Until then, test with fictional accounts.

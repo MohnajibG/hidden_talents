@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 
-const LABELS = { pending: "En attente", accepted: "Acceptée", declined: "Refusée" };
+const LABELS = { pending: "Pending", accepted: "Accepted", declined: "Declined" };
 
 const Missions = ({ notify }) => {
   const [list, setList] = useState(null);
@@ -12,7 +12,7 @@ const Missions = ({ notify }) => {
   const answer = async (id, status) => {
     try {
       await api.patch(`/missions/${id}`, { status });
-      notify(status === "accepted" ? "Mission acceptée. Le demandeur va vous recontacter." : "Proposition refusée.");
+      notify(status === "accepted" ? "Mission accepted. The requester will get back to you." : "Proposal declined.");
       load();
     } catch (e) {
       notify(e.message);
@@ -25,26 +25,26 @@ const Missions = ({ notify }) => {
   return (
     <>
       <h1>Missions</h1>
-      <p className="lead">Les propositions reçues grâce à votre profil, et celles que vous avez envoyées. Vous pouvez refuser une proposition sans vous justifier.</p>
-      {list === null && <p className="hint">Chargement…</p>}
+      <p className="lead">Proposals received thanks to your profile, and the ones you've sent. You can decline a proposal without justifying yourself.</p>
+      {list === null && <p className="hint">Loading…</p>}
 
       <section className="stack">
-        <h2>Reçues</h2>
-        {list && received.length === 0 && <div className="empty">Aucune proposition pour l'instant. Rendez votre profil visible pour être trouvé.</div>}
+        <h2>Received</h2>
+        {list && received.length === 0 && <div className="empty">No proposal yet. Make your profile visible to be found.</div>}
         {received.map((m) => (
           <article key={m.id} className="mission">
             <div className="mission-head">
               <div>
                 <strong>{m.title}</strong>
-                <small>De {m.from?.fullName || "un ancien compte"}{m.from?.jobTitle ? ` · ${m.from.jobTitle}` : ""} · {new Date(m.createdAt).toLocaleDateString("fr-FR")}</small>
+                <small>From {m.from?.fullName || "a former account"}{m.from?.jobTitle ? ` · ${m.from.jobTitle}` : ""} · {new Date(m.createdAt).toLocaleDateString("en-US")}</small>
               </div>
               <span className={`pill m-${m.status}`}>{LABELS[m.status]}</span>
             </div>
             <p className="msg">{m.message}</p>
             {m.status === "pending" && (
               <div className="actions">
-                <button className="btn ghost" onClick={() => answer(m.id, "declined")}>Refuser</button>
-                <button className="btn" onClick={() => answer(m.id, "accepted")}>Accepter</button>
+                <button className="btn ghost" onClick={() => answer(m.id, "declined")}>Decline</button>
+                <button className="btn" onClick={() => answer(m.id, "accepted")}>Accept</button>
               </div>
             )}
           </article>
@@ -53,13 +53,13 @@ const Missions = ({ notify }) => {
 
       {sent.length > 0 && (
         <section className="stack">
-          <h2>Envoyées</h2>
+          <h2>Sent</h2>
           {sent.map((m) => (
             <article key={m.id} className="mission">
               <div className="mission-head">
                 <div>
                   <strong>{m.title}</strong>
-                  <small>À {m.to?.fullName || "un ancien compte"} · {new Date(m.createdAt).toLocaleDateString("fr-FR")}</small>
+                  <small>To {m.to?.fullName || "a former account"} · {new Date(m.createdAt).toLocaleDateString("en-US")}</small>
                 </div>
                 <span className={`pill m-${m.status}`}>{LABELS[m.status]}</span>
               </div>

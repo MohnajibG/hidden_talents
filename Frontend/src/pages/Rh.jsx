@@ -4,8 +4,8 @@ import { Badge, SkillLine } from "../components.jsx";
 
 const Rh = ({ me, notify }) => (
   <>
-    <h1>Espace RH</h1>
-    <p className="lead">Vérifiez les preuves envoyées par les cast members et attribuez le rôle admin RH.</p>
+    <h1>Admin RH area</h1>
+    <p className="lead">Review proofs sent by cast members and grant the admin RH role.</p>
     <Pending notify={notify} />
     <Roles me={me} notify={notify} />
   </>
@@ -22,7 +22,7 @@ const Pending = ({ notify }) => {
   const review = async (userId, skillId, status) => {
     try {
       await api.patch(`/rh/users/${userId}/skills/${skillId}`, { status, note: notes[skillId] || "" });
-      notify(status === "justified" ? "Compétence justifiée." : "Preuve refusée.");
+      notify(status === "justified" ? "Skill justified." : "Proof rejected.");
       load();
     } catch (e) {
       notify(e.message);
@@ -31,8 +31,8 @@ const Pending = ({ notify }) => {
 
   return (
     <section className="stack">
-      <h2>Preuves à vérifier {list && <span className="count">{list.reduce((n, u) => n + u.skills.length, 0)}</span>}</h2>
-      {list && list.length === 0 && <div className="empty">Aucune preuve en attente.</div>}
+      <h2>Proofs to review {list && <span className="count">{list.reduce((n, u) => n + u.skills.length, 0)}</span>}</h2>
+      {list && list.length === 0 && <div className="empty">No proof pending.</div>}
       <div className="grid">
         {list?.map((u) => (
           <Badge key={u.id} person={u}>
@@ -40,12 +40,12 @@ const Pending = ({ notify }) => {
               <div key={s.id} className="review">
                 <SkillLine skill={s} />
                 <input
-                  aria-label={`Motif pour ${s.name}`} placeholder="Motif en cas de refus (facultatif)"
+                  aria-label={`Note for ${s.name}`} placeholder="Note in case of rejection (optional)"
                   value={notes[s.id] || ""} onChange={(e) => setNotes({ ...notes, [s.id]: e.target.value })}
                 />
                 <div className="actions">
-                  <button className="btn ghost small" onClick={() => review(u.id, s.id, "rejected")}>Refuser</button>
-                  <button className="btn small" onClick={() => review(u.id, s.id, "justified")}>Valider</button>
+                  <button className="btn ghost small" onClick={() => review(u.id, s.id, "rejected")}>Reject</button>
+                  <button className="btn small" onClick={() => review(u.id, s.id, "justified")}>Approve</button>
                 </div>
               </div>
             ))}
@@ -71,7 +71,7 @@ const Roles = ({ me, notify }) => {
     try {
       await api.patch(`/rh/users/${id}/role`, { role });
       setUsers(users.map((u) => (u.id === id ? { ...u, role } : u)));
-      notify("Rôle mis à jour.");
+      notify("Role updated.");
     } catch (e) {
       notify(e.message);
     }
@@ -79,11 +79,11 @@ const Roles = ({ me, notify }) => {
 
   return (
     <section className="panel">
-      <h2>Rôles des utilisateurs</h2>
-      <input type="search" aria-label="Rechercher un utilisateur" placeholder="Rechercher par nom ou e-mail" value={q} onChange={(e) => setQ(e.target.value)} />
+      <h2>User roles</h2>
+      <input type="search" aria-label="Search a user" placeholder="Search by name or email" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Nom</th><th>E-mail</th><th>Poste</th><th>Rôle</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Job title</th><th>Role</th></tr></thead>
           <tbody>
             {users.map((u) => (
               <tr key={u.id}>
@@ -91,7 +91,7 @@ const Roles = ({ me, notify }) => {
                 <td>{u.email}</td>
                 <td>{u.jobTitle}</td>
                 <td>
-                  <select aria-label={`Rôle de ${u.fullName}`} value={u.role} disabled={u.id === me.id} onChange={(e) => changeRole(u.id, e.target.value)}>
+                  <select aria-label={`Role of ${u.fullName}`} value={u.role} disabled={u.id === me.id} onChange={(e) => changeRole(u.id, e.target.value)}>
                     {Object.entries(ROLE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </td>
