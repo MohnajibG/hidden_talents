@@ -25,36 +25,36 @@ const Auth = ({ onLogin }) => {
   return (
     <div className="auth">
       <div className="auth-intro">
-        <div className="brand big"><i />Talents Cachés</div>
-        <p>Vos compétences ne s'arrêtent pas à votre poste. Faites connaître ce que vous savez faire en dehors de votre contrat : web design, jardinage, langues, bricolage…</p>
+        <div className="brand big"><i />Hidden Talents</div>
+        <p>Your skills don't stop at your job title. Let people know what you can do outside your contract: web design, gardening, languages, DIY…</p>
         <ul className="promises">
-          <li>Votre profil reste masqué tant que vous ne le rendez pas visible.</li>
-          <li>Vous pouvez refuser toute proposition de mission.</li>
-          <li>Vous pouvez supprimer votre compte à tout moment.</li>
+          <li>Your profile stays hidden until you make it visible.</li>
+          <li>You can decline any mission proposal.</li>
+          <li>You can delete your account at any time.</li>
         </ul>
       </div>
       <form className="panel" onSubmit={submit}>
-        <h1>{mode === "login" ? "Se connecter" : "Créer mon compte"}</h1>
+        <h1>{mode === "login" ? "Log in" : "Create my account"}</h1>
         {mode === "register" && (
           <>
-            <Field id="fullName" label="Prénom et nom" value={form.fullName} onChange={set("fullName")} required />
+            <Field id="fullName" label="First and last name" value={form.fullName} onChange={set("fullName")} required />
             <div className="row">
-              <Field id="jobTitle" label="Poste actuel" placeholder="ex. Cuisinier" value={form.jobTitle} onChange={set("jobTitle")} />
-              <Field id="sector" label="Secteur" placeholder="ex. Restauration" value={form.sector} onChange={set("sector")} />
+              <Field id="jobTitle" label="Current job title" placeholder="e.g. Cook" value={form.jobTitle} onChange={set("jobTitle")} />
+              <Field id="sector" label="Sector" placeholder="e.g. Catering" value={form.sector} onChange={set("sector")} />
             </div>
           </>
         )}
-        <Field id="email" label="Adresse e-mail professionnelle" type="email" autoComplete="email" value={form.email} onChange={set("email")} required />
+        <Field id="email" label="Work email address" type="email" autoComplete="email" value={form.email} onChange={set("email")} required />
         <Field
-          id="password" label="Mot de passe" type="password" minLength={8}
+          id="password" label="Password" type="password" minLength={8}
           autoComplete={mode === "login" ? "current-password" : "new-password"}
-          hint={mode === "register" ? "8 caractères minimum" : undefined}
+          hint={mode === "register" ? "8 characters minimum" : undefined}
           value={form.password} onChange={set("password")} required
         />
         {error && <p className="error" role="alert">{error}</p>}
-        <button className="btn" disabled={busy}>{busy ? "Patientez…" : mode === "login" ? "Se connecter" : "Créer mon compte"}</button>
+        <button className="btn" disabled={busy}>{busy ? "Please wait…" : mode === "login" ? "Log in" : "Create my account"}</button>
         <button type="button" className="link" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>
-          {mode === "login" ? "Pas encore de compte ? S'inscrire" : "Déjà inscrit ? Se connecter"}
+          {mode === "login" ? "No account yet? Sign up" : "Already registered? Log in"}
         </button>
       </form>
     </div>

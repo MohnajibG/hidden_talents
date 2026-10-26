@@ -7,16 +7,16 @@ export const SkillLine = ({ skill, actions }) => (
     <div>
       <strong>{skill.name}</strong>
       <small>
-        {skill.domain} · {skill.level} · {skill.years} an{skill.years > 1 ? "s" : ""}
+        {skill.domain} · {skill.level} · {skill.years} year{skill.years > 1 ? "s" : ""}
         {skill.description ? ` · ${skill.description}` : ""}
       </small>
       {(skill.portfolioUrl || skill.proofUrl) && (
         <small className="proofs">
           {skill.portfolioUrl && <a href={skill.portfolioUrl} target="_blank" rel="noreferrer noopener">Portfolio</a>}
-          {skill.proofUrl && <a href={fileUrl(skill.proofUrl)} target="_blank" rel="noreferrer">{skill.proofFileName || "Preuve jointe"}</a>}
+          {skill.proofUrl && <a href={fileUrl(skill.proofUrl)} target="_blank" rel="noreferrer">{skill.proofFileName || "Attached proof"}</a>}
         </small>
       )}
-      {skill.status === "rejected" && skill.reviewNote && <small className="note">Motif RH : {skill.reviewNote}</small>}
+      {skill.status === "rejected" && skill.reviewNote && <small className="note">HR note: {skill.reviewNote}</small>}
     </div>
     <div className="skill-side">
       <StatusPill status={skill.status} />
@@ -31,13 +31,13 @@ export const Badge = ({ person, footer, children }) => (
       <div className="av">{initials(person.fullName)}</div>
       <div className="who">
         <strong>{person.fullName}</strong>
-        <span>{[person.jobTitle, person.sector].filter(Boolean).join(" · ") || "Poste non renseigné"}</span>
+        <span>{[person.jobTitle, person.sector].filter(Boolean).join(" · ") || "No job title given"}</span>
       </div>
     </div>
     <div className="badge-body">
       {children ?? (person.skills.length
         ? person.skills.map((s) => <SkillLine key={s.id} skill={s} />)
-        : <p className="hint">Aucune compétence ajoutée pour l'instant.</p>)}
+        : <p className="hint">No skills added yet.</p>)}
     </div>
     {footer && <div className="badge-foot">{footer}</div>}
   </article>

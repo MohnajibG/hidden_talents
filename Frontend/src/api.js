@@ -1,7 +1,7 @@
-// Le Backend est déployé séparément : l'URL est configurable via VITE_API_URL.
+// The Backend is deployed separately: the URL is configurable via VITE_API_URL.
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// Petit client pour l'API : renvoie le JSON ou lève une erreur avec le message du serveur.
+// Small API client: returns the JSON or throws an error with the server's message.
 const request = async (method, url, body) => {
   const opts = { method, credentials: "include", headers: {} };
   if (body instanceof FormData) opts.body = body;
@@ -12,7 +12,7 @@ const request = async (method, url, body) => {
   const res = await fetch(API_URL + "/api" + url, opts);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data.error || "Une erreur est survenue.");
+    const err = new Error(data.error || "Something went wrong.");
     err.status = res.status;
     throw err;
   }
@@ -32,14 +32,14 @@ export const ROLE_LABELS = {
 };
 
 export const STATUS_LABELS = {
-  declarative: "Déclarative",
-  pending: "En vérification",
-  justified: "Justifiée",
-  rejected: "Preuve refusée",
+  declarative: "Declarative",
+  pending: "Under review",
+  justified: "Justified",
+  rejected: "Proof rejected",
 };
 
-// Le serveur renvoie des chemins relatifs (ex: proofUrl: "/api/proofs/xxx") : on les
-// préfixe avec l'URL du Backend pour qu'un <a href> fonctionne en cross-origin.
+// The server returns relative paths (e.g. proofUrl: "/api/proofs/xxx"): prefix them
+// with the Backend's URL so an <a href> works cross-origin.
 export const fileUrl = (path) => (path ? API_URL + path : path);
 
 export const initials = (name = "") =>
