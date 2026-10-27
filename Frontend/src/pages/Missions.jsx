@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
-
-const LABELS = { pending: "Pending", accepted: "Accepted", declined: "Declined" };
+import { useLang } from "../i18n.jsx";
 
 const Missions = ({ notify }) => {
+  const { t, label, lang } = useLang();
   const [list, setList] = useState(null);
 
   const load = () => api.get("/missions").then(setList).catch((e) => notify(e.message));
@@ -12,7 +12,7 @@ const Missions = ({ notify }) => {
   const answer = async (id, status) => {
     try {
       await api.patch(`/missions/${id}`, { status });
-      notify(status === "accepted" ? "Mission accepted. The requester will get back to you." : "Proposal declined.");
+      notify(status === "accepted" ? t("missions.accepted") : t("missions.declined"));
       load();
     } catch (e) {
       notify(e.message);
@@ -21,30 +21,35 @@ const Missions = ({ notify }) => {
 
   const received = list?.filter((m) => m.direction === "received") || [];
   const sent = list?.filter((m) => m.direction === "sent") || [];
+  const dateLocale = lang === "fr" ? "fr-FR" : "en-US";
 
   return (
     <>
-      <h1>Missions</h1>
-      <p className="lead">Proposals received thanks to your profile, and the ones you've sent. You can decline a proposal without justifying yourself.</p>
-      {list === null && <p className="hint">Loading…</p>}
+      <h1>{t("missions.heading")}</h1>
+      <p className="lead">{t("missions.lead")}</p>
+      {list === null && <p className="hint">{t("missions.loading")}</p>}
 
       <section className="stack">
-        <h2>Received</h2>
-        {list && received.length === 0 && <div className="empty">No proposal yet. Make your profile visible to be found.</div>}
+        <h2>{t("missions.received")}</h2>
+        {list && received.length === 0 && <div className="empty">{t("missions.noneReceived")}</div>}
         {received.map((m) => (
           <article key={m.id} className="mission">
             <div className="mission-head">
               <div>
                 <strong>{m.title}</strong>
-                <small>From {m.from?.fullName || "a former account"}{m.from?.jobTitle ? ` · ${m.from.jobTitle}` : ""} · {new Date(m.createdAt).toLocaleDateString("en-US")}</small>
+                <small>{t("missions.from", {
+                  name: m.from?.fullName || t("missions.former"),
+                  job: m.from?.jobTitle ? ` · ${m.from.jobTitle}` : "",
+                  date: new Date(m.createdAt).toLocaleDateString(dateLocale),
+                })}</small>
               </div>
-              <span className={`pill m-${m.status}`}>{LABELS[m.status]}</span>
+              <span className={`pill m-${m.status}`}>{label("missionStatus", m.status)}</span>
             </div>
             <p className="msg">{m.message}</p>
             {m.status === "pending" && (
               <div className="actions">
-                <button className="btn ghost" onClick={() => answer(m.id, "declined")}>Decline</button>
-                <button className="btn" onClick={() => answer(m.id, "accepted")}>Accept</button>
+                <button className="btn ghost" onClick={() => answer(m.id, "declined")}>{t("missions.decline")}</button>
+                <button className="btn" onClick={() => answer(m.id, "accepted")}>{t("missions.accept")}</button>
               </div>
             )}
           </article>
@@ -53,15 +58,18 @@ const Missions = ({ notify }) => {
 
       {sent.length > 0 && (
         <section className="stack">
-          <h2>Sent</h2>
+          <h2>{t("missions.sent")}</h2>
           {sent.map((m) => (
             <article key={m.id} className="mission">
               <div className="mission-head">
                 <div>
                   <strong>{m.title}</strong>
-                  <small>To {m.to?.fullName || "a former account"} · {new Date(m.createdAt).toLocaleDateString("en-US")}</small>
+                  <small>{t("missions.to", {
+                    name: m.to?.fullName || t("missions.former"),
+                    date: new Date(m.createdAt).toLocaleDateString(dateLocale),
+                  })}</small>
                 </div>
-                <span className={`pill m-${m.status}`}>{LABELS[m.status]}</span>
+                <span className={`pill m-${m.status}`}>{label("missionStatus", m.status)}</span>
               </div>
             </article>
           ))}

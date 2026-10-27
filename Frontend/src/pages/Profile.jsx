@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { api } from "../api.js";
+import { useLang } from "../i18n.jsx";
 import { Badge, SkillLine, Modal, Field } from "../components.jsx";
 
 const EMPTY_SKILL = { name: "", domain: "", level: "Advanced", years: 1, description: "", portfolioUrl: "" };
 
 const Profile = ({ me, setMe, options, notify }) => {
+  const { t, label } = useLang();
   const [info, setInfo] = useState({ fullName: me.fullName, jobTitle: me.jobTitle, sector: me.sector, availability: me.availability });
   const [skill, setSkill] = useState(EMPTY_SKILL);
   const [file, setFile] = useState(null);
@@ -21,7 +23,7 @@ const Profile = ({ me, setMe, options, notify }) => {
     e.preventDefault();
     try {
       setMe(await api.patch("/me", info));
-      notify("Profile saved.");
+      notify(t("profile.saved"));
     } catch (err) {
       notify(err.message);
     }
@@ -31,7 +33,7 @@ const Profile = ({ me, setMe, options, notify }) => {
     try {
       const updated = await api.patch("/me", { visible: !me.visible });
       setMe(updated);
-      notify(updated.visible ? "Your profile is visible to the admin RH." : "Your profile is hidden.");
+      notify(updated.visible ? t("profile.nowVisible") : t("profile.nowHidden"));
     } catch (err) {
       notify(err.message);
     }
@@ -49,7 +51,7 @@ const Profile = ({ me, setMe, options, notify }) => {
       setSkill(EMPTY_SKILL);
       setFile(null);
       setFileKey((k) => k + 1);
-      notify(file || skill.portfolioUrl ? "Skill added. The admin RH will review your proof." : "Skill added.");
+      notify(file || skill.portfolioUrl ? t("profile.skillWithProofAdded") : t("profile.skillAdded"));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,7 +62,7 @@ const Profile = ({ me, setMe, options, notify }) => {
   const removeSkill = async (id) => {
     try {
       setMe(await api.del(`/me/skills/${id}`));
-      notify("Skill removed.");
+      notify(t("profile.skillRemoved"));
     } catch (err) {
       notify(err.message);
     }
@@ -79,82 +81,82 @@ const Profile = ({ me, setMe, options, notify }) => {
 
   return (
     <>
-      <h1>My talent profile</h1>
-      <p className="lead">Add the skills you have outside your job. A skill with proof (degree, certificate, portfolio) is marked "Justified" after review by the admin RH.</p>
+      <h1>{t("profile.heading")}</h1>
+      <p className="lead">{t("profile.lead")}</p>
 
       <div className={`visibility ${me.visible ? "on" : ""}`}>
         <div>
-          <strong>{me.visible ? "Your profile is visible" : "Your profile is hidden"}</strong>
-          <span>{me.visible ? "The admin RH can find you and propose a mission." : "No one can find you in search for now."}</span>
+          <strong>{me.visible ? t("profile.visibleTitle") : t("profile.hiddenTitle")}</strong>
+          <span>{me.visible ? t("profile.visibleHint") : t("profile.hiddenHint")}</span>
         </div>
-        <button className="btn" onClick={toggleVisible}>{me.visible ? "Hide my profile" : "Make my profile visible"}</button>
+        <button className="btn" onClick={toggleVisible}>{me.visible ? t("profile.hideBtn") : t("profile.showBtn")}</button>
       </div>
 
       <div className="two">
         <div className="stack">
           <form className="panel" onSubmit={addSkill}>
-            <h2>Add a skill</h2>
+            <h2>{t("profile.addSkillHeading")}</h2>
             <div className="row">
-              <Field id="s-name" label="Skill" placeholder="e.g. Web design" value={skill.name} onChange={set("name")} required maxLength={80} />
-              <Field id="s-domain" as="select" label="Domain" value={skill.domain || domains[0] || ""} onChange={set("domain")}>
-                {domains.map((d) => <option key={d}>{d}</option>)}
+              <Field id="s-name" label={t("profile.skillLabel")} placeholder={t("profile.skillPlaceholder")} value={skill.name} onChange={set("name")} required maxLength={80} />
+              <Field id="s-domain" as="select" label={t("profile.domainLabel")} value={skill.domain || domains[0] || ""} onChange={set("domain")}>
+                {domains.map((d) => <option key={d} value={d}>{label("domain", d)}</option>)}
               </Field>
             </div>
             <div className="row">
-              <Field id="s-level" as="select" label="Level" value={skill.level} onChange={set("level")}>
-                {levels.map((l) => <option key={l}>{l}</option>)}
+              <Field id="s-level" as="select" label={t("profile.levelLabel")} value={skill.level} onChange={set("level")}>
+                {levels.map((l) => <option key={l} value={l}>{label("level", l)}</option>)}
               </Field>
-              <Field id="s-years" type="number" min={0} max={60} label="Years of experience" value={skill.years} onChange={set("years")} />
+              <Field id="s-years" type="number" min={0} max={60} label={t("profile.yearsLabel")} value={skill.years} onChange={set("years")} />
             </div>
-            <Field id="s-desc" as="textarea" rows={3} maxLength={500} label="In a few words" placeholder="e.g. Graphic design degree, websites for local associations" value={skill.description} onChange={set("description")} />
+            <Field id="s-desc" as="textarea" rows={3} maxLength={500} label={t("profile.descLabel")} placeholder={t("profile.descPlaceholder")} value={skill.description} onChange={set("description")} />
             <div className="field">
-              <label htmlFor="s-proof">Proof: degree, certificate, attestation</label>
+              <label htmlFor="s-proof">{t("profile.proofLabel")}</label>
               <input key={fileKey} id="s-proof" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e) => setFile(e.target.files[0] || null)} />
-              <span className="hint">PDF or image, 4 MB maximum. Only the admin RH can open this file.</span>
+              <span className="hint">{t("profile.proofHint")}</span>
             </div>
-            <Field id="s-url" type="url" label="Or a link to a portfolio" placeholder="https://myportfolio.com" value={skill.portfolioUrl} onChange={set("portfolioUrl")} />
+            <Field id="s-url" type="url" label={t("profile.portfolioLabel")} placeholder="https://myportfolio.com" value={skill.portfolioUrl} onChange={set("portfolioUrl")} />
             {error && <p className="error" role="alert">{error}</p>}
-            <div className="actions"><button className="btn" disabled={busy}>{busy ? "Sending…" : "Add to my profile"}</button></div>
+            <div className="actions"><button className="btn" disabled={busy}>{busy ? t("profile.sending") : t("profile.addToProfile")}</button></div>
           </form>
 
           <form className="panel" onSubmit={saveInfo}>
-            <h2>My information</h2>
-            <Field id="p-name" label="First and last name" value={info.fullName} onChange={(e) => setInfo({ ...info, fullName: e.target.value })} required />
+            <h2>{t("profile.infoHeading")}</h2>
+            <Field id="p-name" label={t("profile.nameLabel")} value={info.fullName} onChange={(e) => setInfo({ ...info, fullName: e.target.value })} required />
             <div className="row">
-              <Field id="p-job" label="Current job title" value={info.jobTitle} onChange={(e) => setInfo({ ...info, jobTitle: e.target.value })} />
-              <Field id="p-sector" label="Sector" value={info.sector} onChange={(e) => setInfo({ ...info, sector: e.target.value })} />
+              <Field id="p-job" label={t("profile.jobLabel")} value={info.jobTitle} onChange={(e) => setInfo({ ...info, jobTitle: e.target.value })} />
+              <Field id="p-sector" label={t("profile.sectorLabel")} value={info.sector} onChange={(e) => setInfo({ ...info, sector: e.target.value })} />
             </div>
-            <Field id="p-dispo" as="select" label="Availability for missions" value={info.availability} onChange={(e) => setInfo({ ...info, availability: e.target.value })}>
-              {availability.map((a) => <option key={a}>{a}</option>)}
+            <Field id="p-dispo" as="select" label={t("profile.availabilityLabel")} value={info.availability} onChange={(e) => setInfo({ ...info, availability: e.target.value })}>
+              {availability.map((a) => <option key={a} value={a}>{label("availability", a)}</option>)}
             </Field>
-            <div className="actions"><button className="btn ghost">Save</button></div>
+            <div className="actions"><button className="btn ghost">{t("profile.save")}</button></div>
           </form>
         </div>
 
         <div className="stack">
           <div className="panel">
-            <span className="label">What the admin RH sees</span>
-            <Badge person={{ ...me, ...info }} footer={<span className="dispo">{info.availability}</span>}>
-              {me.skills.length === 0 && <p className="hint">Add your first skill using the form.</p>}
+            <span className="label">{t("profile.whatAdminSees")}</span>
+            <Badge person={{ ...me, ...info }} footer={<span className="dispo">{label("availability", info.availability)}</span>}>
+              {me.skills.length === 0 && <p className="hint">{t("profile.addFirstSkillHint")}</p>}
               {me.skills.map((s) => (
-                <SkillLine key={s.id} skill={s} actions={<button className="link danger" onClick={() => removeSkill(s.id)} aria-label={`Remove ${s.name}`}>Remove</button>} />
+                <SkillLine key={s.id} skill={s} actions={<button className="link danger" onClick={() => removeSkill(s.id)} aria-label={t("profile.removeAria", { name: s.name })}>{t("profile.remove")}</button>} />
               ))}
             </Badge>
           </div>
           <div className="panel danger-zone">
-            <h2>Delete my account</h2>
-            <p className="hint">Your profile, skills, files and mission proposals are permanently erased.</p>
-            <div className="actions"><button className="btn danger" onClick={() => setConfirmDelete(true)}>Delete my account</button></div>
+            <h2>{t("profile.deleteHeading")}</h2>
+            <p className="hint">{t("profile.deleteHint")}</p>
+            <div className="actions"><button className="btn danger" onClick={() => setConfirmDelete(true)}>{t("profile.deleteBtn")}</button></div>
           </div>
         </div>
       </div>
 
       {confirmDelete && (
-        <Modal title="Delete your account?" onClose={() => setConfirmDelete(false)}>
-          <p>All your data will be erased. This action is permanent.</p>
+        <Modal title={t("profile.deleteModalTitle")} onClose={() => setConfirmDelete(false)}>
+          <p>{t("profile.deleteModalBody")}</p>
           <div className="actions">
-            <button className="btn ghost" onClick={() => setConfirmDelete(false)}>Cancel</button>
-            <button className="btn danger" onClick={deleteAccount}>Yes, delete everything</button>
+            <button className="btn ghost" onClick={() => setConfirmDelete(false)}>{t("profile.cancel")}</button>
+            <button className="btn danger" onClick={deleteAccount}>{t("profile.deleteConfirm")}</button>
           </div>
         </Modal>
       )}

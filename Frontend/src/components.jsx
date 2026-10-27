@@ -1,47 +1,57 @@
-import { initials, STATUS_LABELS, fileUrl } from "./api.js";
+import { initials, fileUrl } from "./api.js";
+import { useLang } from "./i18n.jsx";
 
-export const StatusPill = ({ status }) => <span className={`pill ${status}`}>{STATUS_LABELS[status]}</span>;
+export const StatusPill = ({ status }) => {
+  const { label } = useLang();
+  return <span className={`pill ${status}`}>{label("skillStatus", status)}</span>;
+};
 
-export const SkillLine = ({ skill, actions }) => (
-  <div className="skill">
-    <div>
-      <strong>{skill.name}</strong>
-      <small>
-        {skill.domain} · {skill.level} · {skill.years} year{skill.years > 1 ? "s" : ""}
-        {skill.description ? ` · ${skill.description}` : ""}
-      </small>
-      {(skill.portfolioUrl || skill.proofUrl) && (
-        <small className="proofs">
-          {skill.portfolioUrl && <a href={skill.portfolioUrl} target="_blank" rel="noreferrer noopener">Portfolio</a>}
-          {skill.proofUrl && <a href={fileUrl(skill.proofUrl)} target="_blank" rel="noreferrer">{skill.proofFileName || "Attached proof"}</a>}
+export const SkillLine = ({ skill, actions }) => {
+  const { t, label } = useLang();
+  return (
+    <div className="skill">
+      <div>
+        <strong>{skill.name}</strong>
+        <small>
+          {label("domain", skill.domain)} · {label("level", skill.level)} · {skill.years} {skill.years > 1 ? t("components.years") : t("components.year")}
+          {skill.description ? ` · ${skill.description}` : ""}
         </small>
-      )}
-      {skill.status === "rejected" && skill.reviewNote && <small className="note">HR note: {skill.reviewNote}</small>}
-    </div>
-    <div className="skill-side">
-      <StatusPill status={skill.status} />
-      {actions}
-    </div>
-  </div>
-);
-
-export const Badge = ({ person, footer, children }) => (
-  <article className="badge">
-    <div className="badge-top">
-      <div className="av">{initials(person.fullName)}</div>
-      <div className="who">
-        <strong>{person.fullName}</strong>
-        <span>{[person.jobTitle, person.sector].filter(Boolean).join(" · ") || "No job title given"}</span>
+        {(skill.portfolioUrl || skill.proofUrl) && (
+          <small className="proofs">
+            {skill.portfolioUrl && <a href={skill.portfolioUrl} target="_blank" rel="noreferrer noopener">{t("components.portfolio")}</a>}
+            {skill.proofUrl && <a href={fileUrl(skill.proofUrl)} target="_blank" rel="noreferrer">{skill.proofFileName || t("components.attachedProof")}</a>}
+          </small>
+        )}
+        {skill.status === "rejected" && skill.reviewNote && <small className="note">{t("components.hrNote", { note: skill.reviewNote })}</small>}
+      </div>
+      <div className="skill-side">
+        <StatusPill status={skill.status} />
+        {actions}
       </div>
     </div>
-    <div className="badge-body">
-      {children ?? (person.skills.length
-        ? person.skills.map((s) => <SkillLine key={s.id} skill={s} />)
-        : <p className="hint">No skills added yet.</p>)}
-    </div>
-    {footer && <div className="badge-foot">{footer}</div>}
-  </article>
-);
+  );
+};
+
+export const Badge = ({ person, footer, children }) => {
+  const { t } = useLang();
+  return (
+    <article className="badge">
+      <div className="badge-top">
+        <div className="av">{initials(person.fullName)}</div>
+        <div className="who">
+          <strong>{person.fullName}</strong>
+          <span>{[person.jobTitle, person.sector].filter(Boolean).join(" · ") || t("components.noJobTitle")}</span>
+        </div>
+      </div>
+      <div className="badge-body">
+        {children ?? (person.skills.length
+          ? person.skills.map((s) => <SkillLine key={s.id} skill={s} />)
+          : <p className="hint">{t("components.noSkillsYet")}</p>)}
+      </div>
+      {footer && <div className="badge-foot">{footer}</div>}
+    </article>
+  );
+};
 
 export const Modal = ({ title, children, onClose }) => (
   <div className="modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>

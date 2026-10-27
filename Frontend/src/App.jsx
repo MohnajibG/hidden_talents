@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { api, ROLE_LABELS } from "./api.js";
+import { api } from "./api.js";
+import { useLang } from "./i18n.jsx";
 import Auth from "./pages/Auth.jsx";
 import Profile from "./pages/Profile.jsx";
 import Talents from "./pages/Talents.jsx";
@@ -8,14 +9,15 @@ import Rh from "./pages/Rh.jsx";
 import Stats from "./pages/Stats.jsx";
 
 const TABS = [
-  { id: "profile", label: "My profile", roles: ["cast_member"] },
-  { id: "talents", label: "Find a talent", roles: ["admin_rh"] },
-  { id: "missions", label: "Missions", roles: ["cast_member", "admin_rh"] },
-  { id: "stats", label: "Overview", roles: ["admin_rh"] },
-  { id: "rh", label: "Admin RH area", roles: ["admin_rh"] },
+  { id: "profile", key: "app.tab.profile", roles: ["cast_member"] },
+  { id: "talents", key: "app.tab.talents", roles: ["admin_rh"] },
+  { id: "missions", key: "app.tab.missions", roles: ["cast_member", "admin_rh"] },
+  { id: "stats", key: "app.tab.stats", roles: ["admin_rh"] },
+  { id: "rh", key: "app.tab.rh", roles: ["admin_rh"] },
 ];
 
 const App = () => {
+  const { t, label, lang, setLang } = useLang();
   const [me, setMe] = useState(undefined); // undefined = loading, null = logged out
   const [options, setOptions] = useState(null);
   const [tab, setTab] = useState(() => location.hash.slice(1) || "profile");
@@ -28,12 +30,12 @@ const App = () => {
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(""), 3000);
-    return () => clearTimeout(t);
+    const id = setTimeout(() => setToast(""), 3000);
+    return () => clearTimeout(id);
   }, [toast]);
 
-  const tabs = me ? TABS.filter((t) => t.roles.includes(me.role)) : [];
-  const current = tabs.find((t) => t.id === tab) ? tab : tabs[0]?.id;
+  const tabs = me ? TABS.filter((tb) => tb.roles.includes(me.role)) : [];
+  const current = tabs.find((tb) => tb.id === tab) ? tab : tabs[0]?.id;
 
   const go = (id) => {
     setTab(id);
@@ -45,7 +47,7 @@ const App = () => {
     setMe(null);
   };
 
-  if (me === undefined) return <div className="loading">Loading…</div>;
+  if (me === undefined) return <div className="loading">{t("app.loading")}</div>;
   if (!me) return <Auth />;
 
   const shared = { me, setMe, options, notify: setToast };
@@ -56,15 +58,19 @@ const App = () => {
         <div className="wrap bar">
           <div className="brand"><i />Hidden Talents</div>
           <nav className="tabs" aria-label="Navigation">
-            {tabs.map((t) => (
-              <button key={t.id} aria-current={current === t.id ? "page" : undefined} onClick={() => go(t.id)}>
-                {t.label}
+            {tabs.map((tb) => (
+              <button key={tb.id} aria-current={current === tb.id ? "page" : undefined} onClick={() => go(tb.id)}>
+                {t(tb.key)}
               </button>
             ))}
           </nav>
           <div className="user">
-            <span>{me.fullName} · {ROLE_LABELS[me.role]}</span>
-            <button className="btn ghost small" onClick={logout}>Log out</button>
+            <div className="lang-switch" role="group" aria-label="Language">
+              <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
+              <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")}>FR</button>
+            </div>
+            <span>{me.fullName} · {label("role", me.role)}</span>
+            <button className="btn ghost small" onClick={logout}>{t("app.logout")}</button>
           </div>
         </div>
       </header>

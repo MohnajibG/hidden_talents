@@ -1,50 +1,52 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { useLang } from "../i18n.jsx";
 import { Badge, Modal, Field } from "../components.jsx";
 
 const Talents = ({ options, notify }) => {
+  const { t, label } = useLang();
   const [filters, setFilters] = useState({ q: "", domain: "", status: "", availability: "" });
   const [list, setList] = useState(null);
   const [error, setError] = useState("");
   const [target, setTarget] = useState(null);
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const id = setTimeout(() => {
       const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
       api.get("/talents" + (qs ? "?" + qs : ""))
         .then((r) => { setList(r); setError(""); })
         .catch((e) => setError(e.message));
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(id);
   }, [filters]);
 
   const set = (k) => (e) => setFilters({ ...filters, [k]: e.target.value });
 
   return (
     <>
-      <h1>Find a talent</h1>
-      <p className="lead">Only cast members who chose to make their profile visible appear here.</p>
+      <h1>{t("talents.heading")}</h1>
+      <p className="lead">{t("talents.lead")}</p>
 
       <div className="filters">
-        <input className="q" type="search" aria-label="Search a skill" placeholder="Search: web design, gardening, sign language…" value={filters.q} onChange={set("q")} />
-        <select aria-label="Domain" value={filters.domain} onChange={set("domain")}>
-          <option value="">All domains</option>
-          {options?.domains.map((d) => <option key={d}>{d}</option>)}
+        <input className="q" type="search" aria-label={t("talents.searchAria")} placeholder={t("talents.searchPlaceholder")} value={filters.q} onChange={set("q")} />
+        <select aria-label={t("talents.domainAria")} value={filters.domain} onChange={set("domain")}>
+          <option value="">{t("talents.allDomains")}</option>
+          {options?.domains.map((d) => <option key={d} value={d}>{label("domain", d)}</option>)}
         </select>
-        <select aria-label="Proof" value={filters.status} onChange={set("status")}>
-          <option value="">All skills</option>
-          <option value="justified">Justified only</option>
+        <select aria-label={t("talents.proofAria")} value={filters.status} onChange={set("status")}>
+          <option value="">{t("talents.allSkills")}</option>
+          <option value="justified">{t("talents.justifiedOnly")}</option>
         </select>
-        <select aria-label="Availability" value={filters.availability} onChange={set("availability")}>
-          <option value="">Any availability</option>
-          {options?.availability.filter((a) => a !== "Not available").map((a) => <option key={a}>{a}</option>)}
+        <select aria-label={t("talents.availabilityAria")} value={filters.availability} onChange={set("availability")}>
+          <option value="">{t("talents.anyAvailability")}</option>
+          {options?.availability.filter((a) => a !== "Not available").map((a) => <option key={a} value={a}>{label("availability", a)}</option>)}
         </select>
       </div>
 
       {error && <p className="error">{error}</p>}
-      {list === null && !error && <p className="hint">Searching…</p>}
+      {list === null && !error && <p className="hint">{t("talents.searching")}</p>}
       {list && list.length === 0 && (
-        <div className="empty">No profile matches. Try another keyword or remove a filter.</div>
+        <div className="empty">{t("talents.noMatch")}</div>
       )}
       <div className="grid">
         {list?.map((p) => (
@@ -53,9 +55,9 @@ const Talents = ({ options, notify }) => {
             person={p}
             footer={
               <>
-                <span className="dispo">{p.availability}</span>
+                <span className="dispo">{label("availability", p.availability)}</span>
                 {p.availability !== "Not available" && (
-                  <button className="btn ghost small" onClick={() => setTarget(p)}>Propose a mission</button>
+                  <button className="btn ghost small" onClick={() => setTarget(p)}>{t("talents.proposeMission")}</button>
                 )}
               </>
             }
@@ -71,18 +73,17 @@ const Talents = ({ options, notify }) => {
 export default Talents;
 
 const MissionForm = ({ target, onClose, notify }) => {
+  const { t } = useLang();
   const first = target.fullName.split(" ")[0];
   const [title, setTitle] = useState("");
-  const [message, setMessage] = useState(
-    `Hi ${first},\n\nYour Hidden Talents profile caught our attention for a project. Would you be up for discussing it?`
-  );
+  const [message, setMessage] = useState(t("talents.defaultMessage", { first }));
   const [error, setError] = useState("");
 
   const send = async (e) => {
     e.preventDefault();
     try {
       await api.post("/missions", { to: target.id, title, message });
-      notify(`Proposal sent to ${target.fullName}.`);
+      notify(t("talents.proposalSent", { name: target.fullName }));
       onClose();
     } catch (err) {
       setError(err.message);
@@ -90,15 +91,15 @@ const MissionForm = ({ target, onClose, notify }) => {
   };
 
   return (
-    <Modal title={`Propose a mission to ${target.fullName}`} onClose={onClose}>
+    <Modal title={t("talents.missionFormTitle", { name: target.fullName })} onClose={onClose}>
       <form className="stack" onSubmit={send}>
-        <p className="hint">The person sees your proposal in their Missions tab and remains free to accept or decline.</p>
-        <Field id="m-title" label="Mission title" placeholder="e.g. Redesign the restaurant's signage" value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={120} />
-        <Field id="m-msg" as="textarea" rows={6} label="Message" value={message} onChange={(e) => setMessage(e.target.value)} required maxLength={2000} />
+        <p className="hint">{t("talents.missionFormHint")}</p>
+        <Field id="m-title" label={t("talents.missionTitleLabel")} placeholder={t("talents.missionTitlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={120} />
+        <Field id="m-msg" as="textarea" rows={6} label={t("talents.messageLabel")} value={message} onChange={(e) => setMessage(e.target.value)} required maxLength={2000} />
         {error && <p className="error">{error}</p>}
         <div className="actions">
-          <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
-          <button className="btn amber">Send proposal</button>
+          <button type="button" className="btn ghost" onClick={onClose}>{t("profile.cancel")}</button>
+          <button className="btn amber">{t("talents.sendProposal")}</button>
         </div>
       </form>
     </Modal>

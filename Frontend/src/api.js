@@ -26,18 +26,6 @@ export const api = {
   del: (url) => request("DELETE", url),
 };
 
-export const ROLE_LABELS = {
-  cast_member: "Cast member",
-  admin_rh: "Admin RH",
-};
-
-export const STATUS_LABELS = {
-  declarative: "Declarative",
-  pending: "Under review",
-  justified: "Justified",
-  rejected: "Proof rejected",
-};
-
 // The server returns relative paths (e.g. proofUrl: "/api/proofs/xxx"): prefix them
 // with the Backend's URL so an <a href> works cross-origin.
 export const fileUrl = (path) => (path ? API_URL + path : path);
