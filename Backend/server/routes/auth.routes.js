@@ -1,44 +1,66 @@
 import { Router } from "express";
-import bcrypt from "bcryptjs";
 import { User } from "../models.js";
 import { setSession, clearSession } from "../auth.js";
-import { selfView } from "../serialize.js";
 import { wrap, rhEmails } from "../lib.js";
+import { randomToken, codeChallengeFromVerifier, authorizeUrl, exchangeCode, fetchUserInfo } from "../okta.js";
 
 const router = Router();
 
-router.post("/auth/register", wrap(async (req, res) => {
-  const email = String(req.body.email || "").trim().toLowerCase();
-  const password = String(req.body.password || "");
-  const fullName = String(req.body.fullName || "").trim();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: "Invalid email address." });
-  const domain = (process.env.ALLOWED_EMAIL_DOMAIN || "").trim().toLowerCase();
-  if (domain && !email.endsWith("@" + domain)) {
-    return res.status(400).json({ error: `Please use your work email address (@${domain}).` });
-  }
-  if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." });
-  if (!fullName) return res.status(400).json({ error: "Please enter your first and last name." });
-  if (await User.exists({ email })) return res.status(409).json({ error: "An account already exists with this address." });
+// Short-lived cookie that bridges /okta/login and /okta/callback: holds the PKCE
+// verifier and the CSRF state, scoped to this flow's own path so it never leaks elsewhere.
+const OAUTH_COOKIE = "tc_oauth";
+const OAUTH_COOKIE_PATH = "/api/auth/okta";
 
-  const user = await User.create({
-    email,
-    fullName,
-    jobTitle: String(req.body.jobTitle || "").trim(),
-    sector: String(req.body.sector || "").trim(),
-    passwordHash: await bcrypt.hash(password, 10),
-    role: rhEmails().includes(email) ? "admin_rh" : "cast_member",
+const frontendUrl = () => process.env.FRONTEND_URL || "http://localhost:5173";
+
+router.get("/auth/okta/login", (req, res) => {
+  const state = randomToken();
+  const verifier = randomToken();
+  res.cookie(OAUTH_COOKIE, JSON.stringify({ state, verifier }), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 5 * 60 * 1000,
+    path: OAUTH_COOKIE_PATH,
   });
-  setSession(res, user);
-  res.status(201).json(selfView(user));
-}));
+  res.redirect(authorizeUrl({ state, codeChallenge: codeChallengeFromVerifier(verifier) }));
+});
 
-router.post("/auth/login", wrap(async (req, res) => {
-  const email = String(req.body.email || "").trim().toLowerCase();
-  const user = await User.findOne({ email }).select("+passwordHash");
-  const ok = user && (await bcrypt.compare(String(req.body.password || ""), user.passwordHash));
-  if (!ok) return res.status(401).json({ error: "Incorrect email or password." });
+router.get("/auth/okta/callback", wrap(async (req, res) => {
+  const fail = (reason) => res.redirect(`${frontendUrl()}/?auth_error=${encodeURIComponent(reason)}`);
+
+  const raw = req.cookies?.[OAUTH_COOKIE];
+  res.clearCookie(OAUTH_COOKIE, { path: OAUTH_COOKIE_PATH });
+  if (!raw) return fail("expired");
+
+  let saved;
+  try { saved = JSON.parse(raw); } catch { return fail("invalid"); }
+  if (!req.query.state || req.query.state !== saved.state) return fail("state_mismatch");
+  if (!req.query.code) return fail("missing_code");
+
+  const tokens = await exchangeCode(String(req.query.code), saved.verifier);
+  const info = await fetchUserInfo(tokens.access_token);
+  const email = String(info.email || "").trim().toLowerCase();
+  if (!email) return fail("no_email");
+
+  const domain = (process.env.ALLOWED_EMAIL_DOMAIN || "").trim().toLowerCase();
+  if (domain && !email.endsWith("@" + domain)) return fail("domain_not_allowed");
+
+  let user = await User.findOne({ email });
+  if (!user) {
+    user = await User.create({
+      email,
+      oktaId: info.sub,
+      fullName: info.name || email.split("@")[0],
+      role: rhEmails().includes(email) ? "admin_rh" : "cast_member",
+    });
+  } else if (!user.oktaId) {
+    user.oktaId = info.sub;
+    await user.save();
+  }
+
   setSession(res, user);
-  res.json(selfView(user));
+  res.redirect(frontendUrl());
 }));
 
 router.post("/auth/logout", (req, res) => { clearSession(res); res.json({ ok: true }); });

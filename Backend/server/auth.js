@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import { User } from "./models.js";
 
-const COOKIE = "tc_session";
+export const SESSION_COOKIE = "tc_session";
+const COOKIE = SESSION_COOKIE;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const secret = () => {

@@ -51,3 +51,14 @@ export const Modal = ({ title, children, onClose }) => (
     </div>
   </div>
 );
+
+export const Field = ({ id, label, hint, as = "input", children, ...props }) => {
+  const Tag = as;
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <Tag id={id} {...props}>{children}</Tag>
+      {hint && <span className="hint">{hint}</span>}
+    </div>
+  );
+};

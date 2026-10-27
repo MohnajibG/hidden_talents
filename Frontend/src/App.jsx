@@ -8,7 +8,7 @@ import Rh from "./pages/Rh.jsx";
 import Stats from "./pages/Stats.jsx";
 
 const TABS = [
-  { id: "profile", label: "My profile", roles: ["cast_member", "admin_rh"] },
+  { id: "profile", label: "My profile", roles: ["cast_member"] },
   { id: "talents", label: "Find a talent", roles: ["admin_rh"] },
   { id: "missions", label: "Missions", roles: ["cast_member", "admin_rh"] },
   { id: "stats", label: "Overview", roles: ["admin_rh"] },
@@ -33,7 +33,7 @@ const App = () => {
   }, [toast]);
 
   const tabs = me ? TABS.filter((t) => t.roles.includes(me.role)) : [];
-  const current = tabs.find((t) => t.id === tab) ? tab : "profile";
+  const current = tabs.find((t) => t.id === tab) ? tab : tabs[0]?.id;
 
   const go = (id) => {
     setTab(id);
@@ -46,7 +46,7 @@ const App = () => {
   };
 
   if (me === undefined) return <div className="loading">Loading…</div>;
-  if (!me) return <Auth onLogin={setMe} />;
+  if (!me) return <Auth />;
 
   const shared = { me, setMe, options, notify: setToast };
 

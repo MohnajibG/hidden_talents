@@ -30,7 +30,8 @@ skillSchema.pre("validate", function () {
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true, select: false },
+    // Set on first Okta login; absent only for accounts created before SSO was wired in.
+    oktaId: { type: String, unique: true, sparse: true },
     fullName: { type: String, required: true, trim: true, maxlength: 80 },
     jobTitle: { type: String, trim: true, maxlength: 80, default: "" },
     sector: { type: String, trim: true, maxlength: 80, default: "" },

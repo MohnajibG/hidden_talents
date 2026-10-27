@@ -1,16 +1,23 @@
 // End-to-end API test. Needs a MongoDB test database:
 //   MONGODB_URI=mongodb://127.0.0.1:27017/talents-test npm test
 // WARNING: the given database is wiped at the start of the test.
+//
+// Login now happens through Okta (see server/routes/auth.routes.js), which this test
+// doesn't drive end-to-end (that would need a live Okta tenant). Instead, accounts are
+// created directly in the database and a session cookie is minted the same way
+// setSession() does — this still exercises every route's authorization logic.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 process.env.JWT_SECRET ||= "test-secret-long-enough-for-jwt-123456";
 process.env.RH_EMAILS = "rh@example.com";
-process.env.ALLOWED_EMAIL_DOMAIN = "example.com";
 
 const { createApp } = await import("../server/app.js");
 const { connectDb } = await import("../server/db.js");
+const { SESSION_COOKIE } = await import("../server/auth.js");
+const { User } = await import("../server/models.js");
 
 let server, base;
 
@@ -27,40 +34,46 @@ after(async () => {
   await mongoose.disconnect();
 });
 
-// A minimal "browser" that keeps the session cookie.
-function client() {
-  let cookie = "";
-  return async (method, path, body) => {
-    const headers = cookie ? { cookie } : {};
+// Creates a user (as Okta login would, on first sign-in) and returns a "browser" that
+// sends its session cookie, like a client that already completed the Okta flow.
+async function login({ email, fullName, role = "cast_member" }) {
+  const user = await User.create({ email, fullName, role, oktaId: `test|${email}` });
+  const token = jwt.sign({ sub: String(user._id) }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  const cookie = `${SESSION_COOKIE}=${token}`;
+  const call = async (method, path, body) => {
+    const headers = { cookie };
     let payload;
     if (body instanceof FormData) payload = body;
     else if (body !== undefined) { headers["content-type"] = "application/json"; payload = JSON.stringify(body); }
     const res = await fetch(base + path, { method, headers, body: payload });
-    const set = res.headers.get("set-cookie");
-    if (set) cookie = set.split(";")[0];
     const type = res.headers.get("content-type") || "";
     const data = type.includes("json") ? await res.json() : await res.arrayBuffer();
     return { status: res.status, data, type };
   };
+  return { call, user };
 }
+
+const anonymous = async (method, path, body) => {
+  const headers = {};
+  let payload;
+  if (body !== undefined) { headers["content-type"] = "application/json"; payload = JSON.stringify(body); }
+  const res = await fetch(base + path, { method, headers, body: payload });
+  const type = res.headers.get("content-type") || "";
+  const data = type.includes("json") ? await res.json() : await res.arrayBuffer();
+  return { status: res.status, data, type };
+};
 
 const pdf = () => new Blob(["%PDF-1.4\n% test diploma\n"], { type: "application/pdf" });
 
-test("full journey: registration, proofs, visibility, search, missions, admin RH, deletion", async () => {
-  const rh = client(), karim = client(), manon = client(), other = client();
+test("full journey: proofs, visibility, search, missions, admin RH, deletion", async () => {
+  const { call: rh } = await login({ email: "rh@example.com", fullName: "Rita HR", role: "admin_rh" });
+  const { call: karim } = await login({ email: "karim@example.com", fullName: "Karim Benali" });
+  const { call: manon } = await login({ email: "manon@example.com", fullName: "Manon Lefort" });
+  const { call: other } = await login({ email: "other@example.com", fullName: "Other Person" });
 
-  // Registration
-  assert.equal((await other("POST", "/auth/register", { email: "x@gmail.com", password: "password1", fullName: "X" })).status, 400, "domain rejected");
-  await other("POST", "/auth/register", { email: "other@example.com", password: "password1", fullName: "Other Person" });
-  const r1 = await rh("POST", "/auth/register", { email: "rh@example.com", password: "password1", fullName: "Rita HR" });
-  assert.equal(r1.data.role, "admin_rh");
-  const k1 = await karim("POST", "/auth/register", { email: "karim@example.com", password: "password1", fullName: "Karim Benali", jobTitle: "Cook", sector: "Catering" });
-  assert.equal(k1.data.role, "cast_member");
-  assert.equal(k1.data.visible, false, "hidden by default");
-  await manon("POST", "/auth/register", { email: "manon@example.com", password: "password1", fullName: "Manon Lefort" });
-  assert.equal((await karim("POST", "/auth/register", { email: "karim@example.com", password: "password1", fullName: "K" })).status, 409);
-  assert.equal((await other("POST", "/auth/login", { email: "karim@example.com", password: "wrong" })).status, 401);
-  assert.equal((await client()("GET", "/me")).status, 401);
+  assert.equal((await anonymous("GET", "/me")).status, 401);
+  assert.equal((await karim("GET", "/me")).data.role, "cast_member");
+  assert.equal((await karim("GET", "/me")).data.visible, false, "hidden by default");
 
   // Skills: one with a proof, one without, one with an invalid link
   const fd = new FormData();

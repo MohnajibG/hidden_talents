@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
-import { Badge, Modal } from "../components.jsx";
-import { Field } from "./Auth.jsx";
+import { Badge, Modal, Field } from "../components.jsx";
 
 const Talents = ({ options, notify }) => {
   const [filters, setFilters] = useState({ q: "", domain: "", status: "", availability: "" });

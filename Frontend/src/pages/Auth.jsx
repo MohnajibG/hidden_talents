@@ -1,26 +1,14 @@
-import { useState } from "react";
-import { api } from "../api.js";
+import { oktaLoginUrl } from "../api.js";
 
-const Auth = ({ onLogin }) => {
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ email: "", password: "", fullName: "", jobTitle: "", sector: "" });
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+const ERROR_MESSAGES = {
+  expired: "Your login session expired, please try again.",
+  state_mismatch: "Login failed for security reasons, please try again.",
+  domain_not_allowed: "This email address isn't allowed to access this app.",
+  no_email: "Your Okta account doesn't have an email address, please contact an admin.",
+};
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setBusy(true);
-    try {
-      const me = await api.post(mode === "login" ? "/auth/login" : "/auth/register", form);
-      onLogin(me);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+const Auth = () => {
+  const error = new URLSearchParams(location.search).get("auth_error");
 
   return (
     <div className="auth">
@@ -33,43 +21,14 @@ const Auth = ({ onLogin }) => {
           <li>You can delete your account at any time.</li>
         </ul>
       </div>
-      <form className="panel" onSubmit={submit}>
-        <h1>{mode === "login" ? "Log in" : "Create my account"}</h1>
-        {mode === "register" && (
-          <>
-            <Field id="fullName" label="First and last name" value={form.fullName} onChange={set("fullName")} required />
-            <div className="row">
-              <Field id="jobTitle" label="Current job title" placeholder="e.g. Cook" value={form.jobTitle} onChange={set("jobTitle")} />
-              <Field id="sector" label="Sector" placeholder="e.g. Catering" value={form.sector} onChange={set("sector")} />
-            </div>
-          </>
-        )}
-        <Field id="email" label="Work email address" type="email" autoComplete="email" value={form.email} onChange={set("email")} required />
-        <Field
-          id="password" label="Password" type="password" minLength={8}
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          hint={mode === "register" ? "8 characters minimum" : undefined}
-          value={form.password} onChange={set("password")} required
-        />
-        {error && <p className="error" role="alert">{error}</p>}
-        <button className="btn" disabled={busy}>{busy ? "Please wait…" : mode === "login" ? "Log in" : "Create my account"}</button>
-        <button type="button" className="link" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>
-          {mode === "login" ? "No account yet? Sign up" : "Already registered? Log in"}
-        </button>
-      </form>
+      <div className="panel">
+        <h1>Log in</h1>
+        <p className="hint">Sign in with your company Okta account.</p>
+        {error && <p className="error" role="alert">{ERROR_MESSAGES[error] || "Login failed, please try again."}</p>}
+        <a className="btn" href={oktaLoginUrl()}>Log in with Okta</a>
+      </div>
     </div>
   );
 };
 
 export default Auth;
-
-export const Field = ({ id, label, hint, as = "input", children, ...props }) => {
-  const Tag = as;
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <Tag id={id} {...props}>{children}</Tag>
-      {hint && <span className="hint">{hint}</span>}
-    </div>
-  );
-};

@@ -42,5 +42,8 @@ export const STATUS_LABELS = {
 // with the Backend's URL so an <a href> works cross-origin.
 export const fileUrl = (path) => (path ? API_URL + path : path);
 
+// Full-page navigation: the Backend redirects to Okta, then back here once logged in.
+export const oktaLoginUrl = () => `${API_URL}/api/auth/okta/login`;
+
 export const initials = (name = "") =>
   name.split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase();

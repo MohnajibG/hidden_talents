@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { api } from "../api.js";
-import { Field } from "./Auth.jsx";
-import { Badge, SkillLine, Modal } from "../components.jsx";
+import { Badge, SkillLine, Modal, Field } from "../components.jsx";
 
 const EMPTY_SKILL = { name: "", domain: "", level: "Advanced", years: 1, description: "", portfolioUrl: "" };
 

@@ -50,7 +50,7 @@ input, select, textarea {
 .user { margin-left: auto; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.85rem; }
 
 /* boutons */
-.btn { border: 0; font: inherit; font-weight: 700; background: var(--teal); color: var(--surface); padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+.btn { display: inline-block; border: 0; font: inherit; font-weight: 700; background: var(--teal); color: var(--surface); padding: 10px 16px; border-radius: 8px; cursor: pointer; text-decoration: none; }
 .btn:disabled { opacity: 0.6; cursor: wait; }
 .btn.ghost { background: transparent; color: var(--teal); border: 1px solid var(--line); }
 .btn.amber { background: var(--amber); color: #1b1404; }
